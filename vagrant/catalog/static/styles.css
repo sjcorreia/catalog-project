@@ -108,6 +108,7 @@ h3 {
 .banner.menu {
 	height: 150px;
 	background-color: #17DBED;
+	/* background-color: #17DBED; */
 }
 .banner.profile {
 	height: 150px;
@@ -121,6 +122,14 @@ h3 {
  	padding: 20px;
 }
  .category-list:hover {
+ 	background-color: #17DBED;
+ 	padding: 20px;
+}
+ .category-list-item {
+ 	background-color: #F0F0F0;
+ 	padding: 20px;
+}
+ .category-list-item:hover {
  	background-color: #17DBED;
  	padding: 20px;
 }
