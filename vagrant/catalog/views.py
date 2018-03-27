@@ -76,7 +76,10 @@ def deleteCategory(category):
 # Show a Catalog Category
 @app.route('/catalog/<string:category>/items')
 def showItemsInCategory(category):
-    return "Items in category: %s" % category
+    category_obj = session.query(Category).filter_by(name=category).one()
+    items = session.query(CatalogItem).filter_by(category_id=category_obj.id).all()
+    return render_template('catalog.html', category=category_obj, items=items)
+    # return "Items in category: %s" % category
 
 # View a Catalog Item
 @app.route('/catalog/<string:category>/<string:item>')
@@ -85,8 +88,8 @@ def viewCatalogItem(category, item):
 
 # Add a Catalog Item
 @app.route('/catalog/new')
-def addNewCatalogItem():
-    return "New Item"
+def addNewCatalogItem(category_id):
+    return "New Item for category %s" % category_id
 
 # Edit a Catalog Item
 @app.route('/catalog/<string:item>/edit')
