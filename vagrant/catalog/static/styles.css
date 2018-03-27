@@ -1,6 +1,7 @@
 * {
 	font-family: "Oswald Bold", sans-serif;
 	font-weight: 700;
+	background-color: #D9DBDB;
 }
 
 h1 {
@@ -95,7 +96,7 @@ h3 {
 .divider.blue {
 	background-color: #42C3C9;
 }
-.divider.green {
+.divider.dark_blue {
 	background-color: #1669C2;
 }
 .banner.main {
@@ -106,6 +107,16 @@ h3 {
 	background-size: cover;
 }
 .banner.menu {
+	height: 150px;
+	background: url("/static/milky-way.jpg");
+	/* background-color: #17DBED; */
+	/* background-color: #17DBED; */
+}
+.banner.catalog {
+	height: 150px;
+	background: url("/static/milky-way.jpg");
+}
+.banner.item {
 	height: 150px;
 	background-color: #17DBED;
 	/* background-color: #17DBED; */
