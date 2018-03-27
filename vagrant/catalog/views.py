@@ -36,6 +36,7 @@ def showLogin():
     # return render_template('login.html', STATE=state)
     return "Placeholder for LOGIN"
 
+
 # Logout
 @app.route('/logout')
 @app.route('/disconnect')
@@ -64,42 +65,52 @@ def newCategory():
     return "Placeholder for new category"
 
 # Edit a Catalog Category
-@app.route('/catalog/<string:category>/edit')
-def editCategory(category):
-    return "Placeholder for Edit category: %s" % category
+# @app.route('/catalog/<string:category>/edit')
+# def editCategory(category):
+#     return "Placeholder for Edit category: %s" % category
+
 
 # Delete a Catalog Category
-@app.route('/catalog/<string:category>/delete')
-def deleteCategory(category):
-    return "Placeholder for delete category: %s" % category
+# @app.route('/catalog/<string:category>/delete')
+# def deleteCategory(category):
+#     return "Placeholder for delete category: %s" % category
+
 
 # Show a Catalog Category
 @app.route('/catalog/<string:category>/items')
 def showItemsInCategory(category):
     category_obj = session.query(Category).filter_by(name=category).one()
-    items = session.query(CatalogItem).filter_by(category_id=category_obj.id).all()
+    items = session.query(CatalogItem).filter_by(
+        category_id=category_obj.id).all()
     return render_template('catalog.html', category=category_obj, items=items)
     # return "Items in category: %s" % category
+
 
 # View a Catalog Item
 @app.route('/catalog/<string:category>/<string:item>')
 def viewCatalogItem(category, item):
     return "View Item %s from category %s" % (item, category)
 
+
 # Add a Catalog Item
 @app.route('/catalog/new')
 def addNewCatalogItem(category_id):
     return "New Item for category %s" % category_id
 
+
 # Edit a Catalog Item
 @app.route('/catalog/<string:item>/edit')
 def editCatalogItem(item):
-    return "Edit Item %s" % item
+    itemToEdit = session.query(CatalogItem).filter_by(
+        name=item).one()
+    return render_template('editcatalogitem.html', item=itemToEdit)
+
 
 # Delete a Catalog Item
 @app.route('/catalog/<string:item>/delete')
 def deleteItem(item):
-    return "Delete Item %s" % item
+    itemToDelete = session.query(CatalogItem).filter_by(name=item).one()
+    return render_template('deletecatalogitem.html', item=itemToDelete)
 
 
 if __name__ == '__main__':
