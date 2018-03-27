@@ -7,7 +7,8 @@ from sqlalchemy import create_engine, asc
 
 from flask_httpauth import HTTPBasicAuth
 import json
-
+import random
+import string
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
 import httplib2
@@ -26,39 +27,76 @@ app = Flask(__name__)
 
 
 # Login
+@app.route('/login')
+def showLogin():
+    # state = ''.join(random.choice(string.ascii_uppercase + string.digits)
+    #                 for x in xrange(32))
+    # login_session['state'] = state
+    # return "The current session state is %s" % login_session['state']
+    # return render_template('login.html', STATE=state)
+    return "Placeholder for LOGIN"
 
 # Logout
+@app.route('/logout')
+@app.route('/disconnect')
+def disconnect():
+    return "Placeholder for logout"
 
 
 @app.route('/')
 @app.route('/catalog')
 def showCatalog():
     categories = session.query(Category).order_by(asc(Category.name))
-    return jsonify(categories=[c.serialize for c in categories])
+    return render_template('categories.html', categories=categories)
 
 
-@app.route('/catalog/JSON')
+@app.route('/catalog.json')
 def categoryJSON():
-    categories = session.query(Category).all()
-    return jsonify(categories=[c.serialize for c in categories])
+    # categories = session.query(Category).all()
+    # return jsonify(categories=[c.serialize for c in categories])
+    items = session.query(CatalogItem).order_by(asc(CatalogItem.name))
+    return jsonify(items=[i.serialize for i in items])
 
 
 # Add a Catalog Category
+@app.route('/catalog/new')
+def newCategory():
+    return "Placeholder for new category"
 
 # Edit a Catalog Category
+@app.route('/catalog/<string:category>/edit')
+def editCategory(category):
+    return "Placeholder for Edit category: %s" % category
 
 # Delete a Catalog Category
+@app.route('/catalog/<string:category>/delete')
+def deleteCategory(category):
+    return "Placeholder for delete category: %s" % category
 
 # Show a Catalog Category
-@app.route('/catalog/<string:category>')
+@app.route('/catalog/<string:category>/items')
 def showItemsInCategory(category):
     return "Items in category: %s" % category
 
+# View a Catalog Item
+@app.route('/catalog/<string:category>/<string:item>')
+def viewCatalogItem(category, item):
+    return "View Item %s from category %s" % (item, category)
+
 # Add a Catalog Item
+@app.route('/catalog/new')
+def addNewCatalogItem():
+    return "New Item"
 
 # Edit a Catalog Item
+@app.route('/catalog/<string:item>/edit')
+def editCatalogItem(item):
+    return "Edit Item %s" % item
 
 # Delete a Catalog Item
+@app.route('/catalog/<string:item>/delete')
+def deleteItem(item):
+    return "Delete Item %s" % item
 
 
 if __name__ == '__main__':
