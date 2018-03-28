@@ -1,5 +1,6 @@
 from models import Base, User, Category, CatalogItem
-from flask import Flask, jsonify, request, url_for, abort, g, render_template
+from flask import Flask, jsonify, request, redirect
+from flask import url_for, abort, g, render_template
 from flask import session as login_session
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
@@ -59,23 +60,6 @@ def categoryJSON():
     return jsonify(items=[i.serialize for i in items])
 
 
-# Add a Catalog Category
-@app.route('/catalog/new')
-def newCategory():
-    return "Placeholder for new category"
-
-# Edit a Catalog Category
-# @app.route('/catalog/<string:category>/edit')
-# def editCategory(category):
-#     return "Placeholder for Edit category: %s" % category
-
-
-# Delete a Catalog Category
-# @app.route('/catalog/<string:category>/delete')
-# def deleteCategory(category):
-#     return "Placeholder for delete category: %s" % category
-
-
 # Show a Catalog Category
 @app.route('/catalog/<string:category>/items')
 def showItemsInCategory(category):
@@ -94,16 +78,29 @@ def viewCatalogItem(category, item):
 
 # Add a Catalog Item
 @app.route('/catalog/new')
-def addNewCatalogItem(category_id):
-    return "New Item for category %s" % category_id
+def addNewCatalogItem():
+    return "New Item for category placeholder"
 
 
 # Edit a Catalog Item
-@app.route('/catalog/<string:item>/edit')
+@app.route('/catalog/<string:item>/edit', methods=['GET', 'POST'])
 def editCatalogItem(item):
+    categories = session.query(Category).all()
     itemToEdit = session.query(CatalogItem).filter_by(
         name=item).one()
-    return render_template('editcatalogitem.html', item=itemToEdit)
+    if request.method == 'POST':
+        if request.form['name']:
+            itemToEdit.name = request.form['name']
+        if request.form['description']:
+            itemToEdit.description = request.form['description']
+        if request.form['category']:
+            itemToEdit.category_id = request.form['category']
+        session.add(itemToEdit)
+        session.commit()
+        return redirect(url_for('showCatalog'))
+    else:
+        return render_template('editcatalogitem.html', item=itemToEdit,
+                               categories=categories)
 
 
 # Delete a Catalog Item
