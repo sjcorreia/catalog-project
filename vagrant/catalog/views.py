@@ -1,6 +1,6 @@
 from models import Base, User, Category, CatalogItem
 from flask import Flask, jsonify, request, redirect
-from flask import url_for, abort, g, render_template
+from flask import url_for, abort, g, render_template, flash
 from flask import session as login_session
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
@@ -73,14 +73,32 @@ def showItemsInCategory(category):
 # View a Catalog Item
 @app.route('/catalog/<string:category>/<string:item>')
 def viewCatalogItem(category, item):
-    return "View Item %s from category %s" % (item, category)
+    itemToDisplay = session.query(CatalogItem).filter_by(name=item).one()
+    categoryToDisplay = session.query(Category).filter_by(name=category).one()
+    return render_template('viewcatalogitem.html', category=categoryToDisplay,
+                           item=itemToDisplay)
+    # return "View Item %s from category %s" % (item, category)
 
 
 # Add a Catalog Item
-@app.route('/catalog/new')
+@app.route('/catalog/new', methods=['GET', 'POST'])
 def addNewCatalogItem():
     categories = session.query(Category).all()
-    return render_template('newcatalogitem.html', categories=categories)
+    if request.method == 'POST':
+        newItem = CatalogItem()
+        if request.form['name']:
+            newItem.name = request.form['name']
+        if request.form['description']:
+            newItem.description = request.form['description']
+        if request.form['category']:
+            newItem.category_id = request.form['category']
+        newItem.user_id = 1  # Right now simply hard-coded
+        session.add(newItem)
+        session.commit()
+        flash('Catalog Item %s Successfully Added' % newItem.name)
+        return redirect(url_for('showCatalog'))
+    else:
+        return render_template('newcatalogitem.html', categories=categories)
 
 
 # Edit a Catalog Item
@@ -105,12 +123,19 @@ def editCatalogItem(item):
 
 
 # Delete a Catalog Item
-@app.route('/catalog/<string:item>/delete')
+@app.route('/catalog/<string:item>/delete', methods=['GET', 'POST'])
 def deleteItem(item):
     itemToDelete = session.query(CatalogItem).filter_by(name=item).one()
-    return render_template('deletecatalogitem.html', item=itemToDelete)
+    if request.method == 'POST':
+        session.delete(itemToDelete)
+        session.commit()
+        flash('Catalog Item Successfully Deleted')
+        return redirect(url_for('showCatalog'))
+    else:
+        return render_template('deletecatalogitem.html', item=itemToDelete)
 
 
 if __name__ == '__main__':
+    app.secret_key = 'super_secret_key'
     app.debug = True
     app.run(host='0.0.0.0', port=8000)
