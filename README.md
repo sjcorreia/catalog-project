@@ -8,8 +8,9 @@ A repository the catalog application for Udacity FSND Program
 
 ## Additional Resources
 
-[Outer Space Sunrise](https://pixabay.com/en/sunrise-space-outer-globe-world-1756274/) from Pixabay
-[Milky Way Sky](https://pixabay.com/en/milky-way-starry-sky-night-sky-star-2695569/) from Pixabay
+* [Bootstrap forms](https://getbootstrap.com/docs/4.0/components/forms/)
+* [Outer Space Sunrise](https://pixabay.com/en/sunrise-space-outer-globe-world-1756274/) from Pixabay
+* [Milky Way Sky](https://pixabay.com/en/milky-way-starry-sky-night-sky-star-2695569/) from Pixabay
 
 ## License
 
