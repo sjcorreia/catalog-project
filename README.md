@@ -1,3 +1,5 @@
+...in progress
+
 # Item Catalog Application
 
 A repository the catalog application for Udacity FSND Program
