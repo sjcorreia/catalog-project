@@ -79,7 +79,8 @@ def viewCatalogItem(category, item):
 # Add a Catalog Item
 @app.route('/catalog/new')
 def addNewCatalogItem():
-    return "New Item for category placeholder"
+    categories = session.query(Category).all()
+    return render_template('newcatalogitem.html', categories=categories)
 
 
 # Edit a Catalog Item
