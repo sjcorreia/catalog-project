@@ -199,7 +199,7 @@ a {
 }
 
 .flash {
-	background-color: #98FB98;
+	background-color: rgb(178, 235, 245);
 	width: 100%;
 	text-decoration: none;
 }
