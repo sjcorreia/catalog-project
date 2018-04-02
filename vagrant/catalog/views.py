@@ -49,7 +49,8 @@ def disconnect():
 @app.route('/catalog')
 def showCatalog():
     categories = session.query(Category).order_by(asc(Category.name))
-    return render_template('categories.html', categories=categories)
+    items = session.query(CatalogItem).order_by(asc(CatalogItem.name)).limit(5)
+    return render_template('categories.html', categories=categories, items=items)
 
 
 @app.route('/catalog.json')
