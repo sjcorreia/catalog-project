@@ -32,13 +32,21 @@ app = Flask(__name__)
 
 
 # Login
-@app.route('/login')
+@app.route('/login', methods=['POST', 'GET'])
 def showLogin():
-    state = ''.join(random.choice(string.ascii_uppercase + string.digits)
-                    for x in range(32))
-    login_session['state'] = state
-    # return "The current session state is %s" % login_session['state']
-    return render_template('login.html', STATE=state)
+    if request.method == 'POST':
+        if request.form['usr']:
+            print("username: %s" % request.form['usr'])
+        if request.form['pwd']:
+            print("password: %s" % request.form['pwd'])
+        flash("you are ALMOST logged in as %s" % request.form['usr'])
+        return redirect('/catalog')
+    else:
+        state = ''.join(random.choice(string.ascii_uppercase + string.digits)
+                        for x in range(32))
+        login_session['state'] = state
+        # return "The current session state is %s" % login_session['state']
+        return render_template('login.html', STATE=state)
 
 
 @app.route('/gconnect', methods=['POST'])
@@ -128,7 +136,8 @@ def gconnect():
     output += '!</h1>'
     output += '<img src="'
     output += login_session['picture']
-    output += ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
+    output += ' " style = "width: 300px; height: 300px;border-radius: '
+    output += '150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
     flash("you are now logged in as %s" % login_session['username'])
     print("done!")
     return output
