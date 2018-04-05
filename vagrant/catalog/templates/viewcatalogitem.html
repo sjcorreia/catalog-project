@@ -6,7 +6,11 @@
     <div class="col-md-11 col-md-offset-1 padding-none">
         <h1>{{category.name}}
             <figure class="creator">
-                <img src={{item.user.picture}}>
+                {% if item.user.picture %}
+                    <img src={{item.user.picture}}>
+                {% else %}
+                    <img src="{{ url_for('static', filename='blank-profile-picture.png') }}">
+                {% endif %}
                 <figcaption>{{item.user.username}}</figcaption>
             </figure>
         </h1>
@@ -34,8 +38,10 @@
         </a>
         <div class="catalog-item">
             <p>{{item.description}}</p>
+            {%if item.user.username == session['username'] %}
             <a href='{{url_for('editCatalogItem', item=item.name ) }}'>Edit</a> |
             <a href='{{url_for('deleteItem', item=item.name ) }}'>Delete</a>
+            {% endif %}
         </div>
     </div>
     <div class="col-md-1"></div>
