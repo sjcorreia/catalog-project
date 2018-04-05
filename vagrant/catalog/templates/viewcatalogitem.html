@@ -6,8 +6,8 @@
     <div class="col-md-11 col-md-offset-1 padding-none">
         <h1>{{category.name}}
             <figure class="creator">
-                <img src="{{ url_for('static', filename='blank-profile-picture.png') }}">
-                <figcaption>Creator's name goes here</figcaption>
+                <img src={{item.user.picture}}>
+                <figcaption>{{item.user.username}}</figcaption>
             </figure>
         </h1>
 
