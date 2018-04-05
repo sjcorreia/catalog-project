@@ -6,36 +6,31 @@ from flask import session as login_session
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy import create_engine, asc
-
 from flask_httpauth import HTTPBasicAuth
-import json
-import random
-import string
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
 import httplib2
 from flask import make_response
 import requests
-
-auth = HTTPBasicAuth()
+import json
+import random
+import string
 
 CLIENT_ID = json.loads(
     open('client_secrets.json', 'r').read())['web']['client_id']
-APPLICATION_NAME = "Catalog Application"
 
 engine = create_engine('sqlite:///catalog.db')
 
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
+auth = HTTPBasicAuth()
 app = Flask(__name__)
 
 
 @auth.verify_password
 def verify_password(username_or_token, password):
     #Try to see if it's a token first
-    # print(username_or_token)
-    # print(password)
     user_id = User.verify_auth_token(username_or_token)
     if user_id:
         user = session.query(User).filter_by(id=user_id).one()
@@ -54,10 +49,8 @@ def verify_password(username_or_token, password):
 def showLogin():
     if request.method == 'POST':
         if request.form['usr']:
-            print("username: %s" % request.form['usr'])
             username = request.form['usr']
         if request.form['pwd']:
-            print("password: %s" % request.form['pwd'])
             password = request.form['pwd']
 
         if username is None or password is None:
@@ -68,8 +61,6 @@ def showLogin():
                 username=username).first()
             if verify_password(user.username, password):
                 print("Password verified")
-                # TODO: New function to set up login session
-                # see if user exists, if it doesn't make a new one
                 login_session['username'] = user.username
                 login_session['email'] = user.email
                 # ADD PROVIDER TO LOGIN SESSION
@@ -96,6 +87,7 @@ def showLogin():
         return render_template('login.html', STATE=state)
 
 
+# Handles the OAuth from Google
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
     # Validate state token
@@ -122,7 +114,6 @@ def gconnect():
     url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s'
            % access_token)
     h = httplib2.Http()
-    print(h.request(url, 'GET')[1])
     result = json.loads(h.request(url, 'GET')[1])
     # If there was an error in the access token info, abort.
     if result.get('error') is not None:
@@ -197,7 +188,6 @@ def createUser(login_session):
                        'email'], picture=login_session['picture'])
         session.add(newUser)
         session.commit()
-    # if login_session['provider'] == 'internal':
     user = session.query(User).filter_by(email=login_session['email']).one()
     return user.id
 
@@ -271,11 +261,18 @@ def showCatalog():
 
 @app.route('/catalog.json')
 def categoryJSON():
-    # categories = session.query(Category).all()
-    # return jsonify(categories=[c.serialize for c in categories])
-    # TODO: Nest the items within the categories
+    categories = session.query(Category).all()
     items = session.query(CatalogItem).order_by(asc(CatalogItem.name))
-    return jsonify(items=[i.serialize for i in items])
+    categoryList = []
+    for category in categories:
+        categoryList.append(category.serialize)
+        item_list = []
+        for item in items:
+            if item.category.name == category.name:
+                item_list.append(item.serialize)
+        categoryList.append({"items" : item_list})
+    completeJson = {"Category" : categoryList}
+    return jsonify(completeJson)
 
 
 # Show a Catalog Category
@@ -284,7 +281,8 @@ def showItemsInCategory(category):
     category_obj = session.query(Category).filter_by(name=category).one()
     items = session.query(CatalogItem).filter_by(
         category_id=category_obj.id).all()
-    return render_template('catalog.html', category=category_obj, items=items)
+    return render_template('catalog.html', category=category_obj, items=items,
+                           session=login_session)
     # return "Items in category: %s" % category
 
 
@@ -294,7 +292,7 @@ def viewCatalogItem(category, item):
     itemToDisplay = session.query(CatalogItem).filter_by(name=item).one()
     categoryToDisplay = session.query(Category).filter_by(name=category).one()
     return render_template('viewcatalogitem.html', category=categoryToDisplay,
-                           item=itemToDisplay)
+                           item=itemToDisplay, session=login_session)
     # return "View Item %s from category %s" % (item, category)
 
 
@@ -311,7 +309,7 @@ def addNewCatalogItem():
             newItem.description = request.form['description']
         if request.form['category']:
             newItem.category_id = request.form['category']
-        newItem.user_id = 1  # TODO: Right now simply hard-coded
+        newItem.user_id = login_session['user_id']
         session.add(newItem)
         session.commit()
         flash('Catalog Item %s Successfully Added' % newItem.name)
@@ -361,7 +359,6 @@ def deleteItem(item):
 def newUserAccount():
     if request.method == 'POST':
         if request.form['usr']:
-            print("username: %s" % request.form['usr'])
             username = request.form['usr']
             try:
                 user = session.query(User).filter_by(username=username).one()
@@ -371,7 +368,6 @@ def newUserAccount():
             except:
                 pass
         if request.form['email']:
-            print("email: %s" % request.form['email'])
             email = request.form['email']
             try:
                 user = session.query(User).filter_by(email=email).one()
@@ -382,7 +378,6 @@ def newUserAccount():
             except:
                 pass
         if request.form['pwd']:
-            print("password: %s" % request.form['pwd'])
             password = request.form['pwd']
         if username is None or password is None or email is None:
             flash("Missing Arguments, Please Enter all Information")
