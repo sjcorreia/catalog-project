@@ -31,15 +31,62 @@ session = DBSession()
 app = Flask(__name__)
 
 
+@auth.verify_password
+def verify_password(username_or_token, password):
+    #Try to see if it's a token first
+    # print(username_or_token)
+    # print(password)
+    user_id = User.verify_auth_token(username_or_token)
+    if user_id:
+        user = session.query(User).filter_by(id=user_id).one()
+    else:
+        user = session.query(User).filter_by(
+            username=username_or_token).first()
+        # print("User from db: %s" % user.username)
+        if not user or not user.verify_password(password):
+            return False
+    g.user = user
+    return True
+
+
 # Login
 @app.route('/login', methods=['POST', 'GET'])
 def showLogin():
     if request.method == 'POST':
         if request.form['usr']:
             print("username: %s" % request.form['usr'])
+            username = request.form['usr']
         if request.form['pwd']:
             print("password: %s" % request.form['pwd'])
-        flash("you are ALMOST logged in as %s" % request.form['usr'])
+            password = request.form['pwd']
+
+        if username is None or password is None:
+            flash("Missing Arguments, not properly logged in")
+        if session.query(User).filter_by(username=username).first() is not None:
+            print("existing user")
+            user = session.query(User).filter_by(
+                username=username).first()
+            if verify_password(user.username, password):
+                print("Password verified")
+                # TODO: New function to set up login session
+                # see if user exists, if it doesn't make a new one
+                login_session['username'] = user.username
+                login_session['email'] = user.email
+                # ADD PROVIDER TO LOGIN SESSION
+                login_session['provider'] = 'internal'
+                user_id = getUserID(user.email)
+                if not user_id:
+                    print("need to get user_id")
+                login_session['user_id'] = user_id
+            else:
+                print("password not verified")
+                flash("Access Denied! Username or Password Incorrect")
+                return redirect('/login')
+        else:
+            flash("Please create a new user account")
+            return redirect('/newuseraccount')
+                
+        flash("You are logged in as %s" % request.form['usr'])
         return redirect('/catalog')
     else:
         state = ''.join(random.choice(string.ascii_uppercase + string.digits)
@@ -102,7 +149,7 @@ def gconnect():
     stored_access_token = login_session.get('access_token')
     stored_gplus_id = login_session.get('gplus_id')
     if stored_access_token is not None and gplus_id == stored_gplus_id:
-        response = make_response(json.dumps('Current user is already connected.'),
+        response = make_response(json.dumps('Current user already connected.'),
                                  200)
         response.headers['Content-Type'] = 'application/json'
         return response
@@ -145,10 +192,12 @@ def gconnect():
 
 # User Helper Functions
 def createUser(login_session):
-    newUser = User(name=login_session['username'], email=login_session[
-                   'email'], picture=login_session['picture'])
-    session.add(newUser)
-    session.commit()
+    if login_session['provider'] == 'google':
+        newUser = User(username=login_session['username'], email=login_session[
+                       'email'], picture=login_session['picture'])
+        session.add(newUser)
+        session.commit()
+    # if login_session['provider'] == 'internal':
     user = session.query(User).filter_by(email=login_session['email']).one()
     return user.id
 
@@ -200,9 +249,9 @@ def disconnect():
             gdisconnect()
             del login_session['gplus_id']
             del login_session['access_token']
+            del login_session['picture']
         del login_session['username']
         del login_session['email']
-        del login_session['picture']
         del login_session['user_id']
         del login_session['provider']
         flash("You have successfully been logged out.")
@@ -224,6 +273,7 @@ def showCatalog():
 def categoryJSON():
     # categories = session.query(Category).all()
     # return jsonify(categories=[c.serialize for c in categories])
+    # TODO: Nest the items within the categories
     items = session.query(CatalogItem).order_by(asc(CatalogItem.name))
     return jsonify(items=[i.serialize for i in items])
 
@@ -250,6 +300,7 @@ def viewCatalogItem(category, item):
 
 # Add a Catalog Item
 @app.route('/catalog/new', methods=['GET', 'POST'])
+@auth.login_required
 def addNewCatalogItem():
     categories = session.query(Category).all()
     if request.method == 'POST':
@@ -260,7 +311,7 @@ def addNewCatalogItem():
             newItem.description = request.form['description']
         if request.form['category']:
             newItem.category_id = request.form['category']
-        newItem.user_id = 1  # Right now simply hard-coded
+        newItem.user_id = 1  # TODO: Right now simply hard-coded
         session.add(newItem)
         session.commit()
         flash('Catalog Item %s Successfully Added' % newItem.name)
@@ -271,6 +322,7 @@ def addNewCatalogItem():
 
 # Edit a Catalog Item
 @app.route('/catalog/<string:item>/edit', methods=['GET', 'POST'])
+@auth.login_required
 def editCatalogItem(item):
     categories = session.query(Category).all()
     itemToEdit = session.query(CatalogItem).filter_by(
@@ -292,6 +344,7 @@ def editCatalogItem(item):
 
 # Delete a Catalog Item
 @app.route('/catalog/<string:item>/delete', methods=['GET', 'POST'])
+@auth.login_required
 def deleteItem(item):
     itemToDelete = session.query(CatalogItem).filter_by(name=item).one()
     if request.method == 'POST':
@@ -302,6 +355,46 @@ def deleteItem(item):
     else:
         return render_template('deletecatalogitem.html', item=itemToDelete)
 
+
+# Create a new user account
+@app.route('/newuseraccount', methods=['POST', 'GET'])
+def newUserAccount():
+    if request.method == 'POST':
+        if request.form['usr']:
+            print("username: %s" % request.form['usr'])
+            username = request.form['usr']
+            try:
+                user = session.query(User).filter_by(username=username).one()
+                print("username already exists in db")
+                flash('Username already exists, please choose another')
+                return render_template('createnewuser.html')
+            except:
+                pass
+        if request.form['email']:
+            print("email: %s" % request.form['email'])
+            email = request.form['email']
+            try:
+                user = session.query(User).filter_by(email=email).one()
+                print("email already exists in db")
+                flash('This E-Mail address is already associated with \
+                another account, please choose another one')
+                return render_template('createnewuser.html')
+            except:
+                pass
+        if request.form['pwd']:
+            print("password: %s" % request.form['pwd'])
+            password = request.form['pwd']
+        if username is None or password is None or email is None:
+            flash("Missing Arguments, Please Enter all Information")
+        user = User(username=username)
+        user.email = email
+        user.hash_password(password)
+        session.add(user)
+        session.commit()
+        flash('New User Account Created! Please Log-In')
+        return redirect('/login')
+    else:
+        return render_template('createnewuser.html')
 
 if __name__ == '__main__':
     app.secret_key = 'super_secret_key'
