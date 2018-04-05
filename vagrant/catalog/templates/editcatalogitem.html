@@ -19,7 +19,7 @@
 
                 <label for="category">Category:</label>
                 <select class="custom-select mr-sm-2" id="inlineFormCustomSelect" name="category">
-                    <option selected>Category...</option>
+                    <option selected>{{item.category.name}}</option>
                     {% for category in categories %}
                     <option value="{{category.id}}">{{category.name}}</option>
                     {% endfor %}
