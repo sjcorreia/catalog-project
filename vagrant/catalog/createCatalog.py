@@ -1,3 +1,5 @@
+#!/usr/bin/python
+from __future__ import print_function
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -20,7 +22,7 @@ session = DBSession()
 
 
 # Create dummy user
-User1 = User(name="Robo Barista", email="tinnyTim@udacity.com",
+User1 = User(username="Robo Barista", email="tinnyTim@udacity.com",
              picture='https://pbs.twimg.com/profile_images/2671170543/18debd694829ed78203a5a36dd364160_400x400.png')
 session.add(User1)
 session.commit()
@@ -143,7 +145,7 @@ session.commit()
 
 catalogItem13 = CatalogItem(user_id=1,
                             name="Miles Davis",
-                            description="Miles Dewey Davis III (May 26, 1926 – September 28, 1991) was an American jazz trumpeter, bandleader, and composer. He is among the most influential and acclaimed figures in the history of jazz and 20th century music. Davis adopted a variety of musical directions in his five-decade career which kept him at the forefront of a number of major stylistic developments in jazz.",
+                            description="Miles Dewey Davis III (May 26, 1926 - September 28, 1991) was an American jazz trumpeter, bandleader, and composer. He is among the most influential and acclaimed figures in the history of jazz and 20th century music. Davis adopted a variety of musical directions in his five-decade career which kept him at the forefront of a number of major stylistic developments in jazz.",
                             user=User1,
                             category=Category5)
 session.add(catalogItem13)
@@ -151,7 +153,7 @@ session.commit()
 
 catalogItem14 = CatalogItem(user_id=1,
                             name="John Coltrane",
-                            description="John William Coltrane, also known as 'Trane' (September 23, 1926 – July 17, 1967), was an American jazz saxophonist and composer. Working in the bebop and hard bop idioms early in his career, Coltrane helped pioneer the use of modes in jazz and was later at the forefront of free jazz. He led at least fifty recording sessions during his career, and appeared as a sideman on many albums by other musicians, including trumpeter Miles Davis and pianist Thelonious Monk.",
+                            description="John William Coltrane, also known as 'Trane' (September 23, 1926 - July 17, 1967), was an American jazz saxophonist and composer. Working in the bebop and hard bop idioms early in his career, Coltrane helped pioneer the use of modes in jazz and was later at the forefront of free jazz. He led at least fifty recording sessions during his career, and appeared as a sideman on many albums by other musicians, including trumpeter Miles Davis and pianist Thelonious Monk.",
                             user=User1,
                             category=Category5)
 session.add(catalogItem14)
@@ -159,7 +161,7 @@ session.commit()
 
 catalogItem15 = CatalogItem(user_id=1,
                             name="Thelonious Monk",
-                            description="Thelonious Sphere Monk (October 10, 1917 – February 17, 1982) was an American jazz pianist and composer. ",
+                            description="Thelonious Sphere Monk (October 10, 1917 - February 17, 1982) was an American jazz pianist and composer. ",
                             user=User1,
                             category=Category5)
 session.add(catalogItem15)
