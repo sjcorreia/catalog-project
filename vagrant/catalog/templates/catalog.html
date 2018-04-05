@@ -13,9 +13,8 @@
 	</div>
 
 	<div class = 'flash'>
-			      {% with messages = get_flashed_messages() %}
-	      {% if messages %}
-	
+		{% with messages = get_flashed_messages() %}
+	      	{% if messages %}
 	        <ul>
 	        {% for message in messages %}
 	            <li> <strong> {{ message }} </strong> </li>
@@ -25,29 +24,19 @@
 	    {% endwith %}
 
 	</div>
-
-	<div class="row padding-top padding-bottom">
-		<div class="col-md-1"></div>
-		<div class="col-md-11 padding-none">
-			<a href="{{url_for('addNewCatalogItem' )}}">
-				<button class="btn btn-default" id="new-catalog-item">
-					<span class="glyphicon glyphicon-music" aria-hidden="true"></span>Add Catalog Item
-				</button>
-			</a>
-		</div>
-		<div class="col-md-7"></div>
-	</div>
 	
 	{% if items !=[] %}	
 		<div class="row">
 			<div class="col-md-1"></div>
 			<div class="col-md-3">
 				<h2>Catalog Items</h2>
-					{% for i in items %}
+					{% for item in items %}
 						<div class="catalog-item">
-							<a href='{{url_for('viewCatalogItem', category=category.name, item=i.name )}}'><h3>{{i.name}}</h3></a>
-							<a href='{{url_for('editCatalogItem', item=i.name ) }}'>Edit</a> | 
-							<a href='{{url_for('deleteItem', item=i.name ) }}'>Delete</a>
+							<a href='{{url_for('viewCatalogItem', category=category.name, item=item.name )}}'><h3>{{item.name}}</h3></a>
+							 {%if item.user.username == session['username'] %}
+							<a href='{{url_for('editCatalogItem', item=item.name ) }}'>Edit</a> | 
+							<a href='{{url_for('deleteItem', item=item.name ) }}'>Delete</a>
+							{% endif %}
 						</div>
 					{% endfor %}
 			</div>
