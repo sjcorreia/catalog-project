@@ -5,12 +5,14 @@ from flask import url_for, abort, g, render_template, flash
 from flask import session as login_session
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy import create_engine, asc
 from flask_httpauth import HTTPBasicAuth
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
 import httplib2
 from flask import make_response
+from io import StringIO
 import requests
 import json
 import random
@@ -30,14 +32,13 @@ app = Flask(__name__)
 
 @auth.verify_password
 def verify_password(username_or_token, password):
-    #Try to see if it's a token first
+    # Try to see if it's a token first
     user_id = User.verify_auth_token(username_or_token)
     if user_id:
         user = session.query(User).filter_by(id=user_id).one()
     else:
         user = session.query(User).filter_by(
             username=username_or_token).first()
-        # print("User from db: %s" % user.username)
         if not user or not user.verify_password(password):
             return False
     g.user = user
@@ -55,7 +56,8 @@ def showLogin():
 
         if username is None or password is None:
             flash("Missing Arguments, not properly logged in")
-        if session.query(User).filter_by(username=username).first() is not None:
+        if session.query(User).filter_by(username=username).first() is \
+           not None:
             print("existing user")
             user = session.query(User).filter_by(
                 username=username).first()
@@ -76,7 +78,7 @@ def showLogin():
         else:
             flash("Please create a new user account")
             return redirect('/newuseraccount')
-                
+
         flash("You are logged in as %s" % request.form['usr'])
         return redirect('/catalog')
     else:
@@ -114,7 +116,8 @@ def gconnect():
     url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s'
            % access_token)
     h = httplib2.Http()
-    result = json.loads(h.request(url, 'GET')[1])
+    response, content = h.request(url, 'GET')
+    result = json.loads(content.decode('latin1'))
     # If there was an error in the access token info, abort.
     if result.get('error') is not None:
         response = make_response(json.dumps(result.get('error')), 500)
@@ -175,7 +178,8 @@ def gconnect():
     output += '<img src="'
     output += login_session['picture']
     output += ' " style = "width: 300px; height: 300px;border-radius: '
-    output += '150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
+    output += '150px;-webkit-border-radius: '
+    output += '150px;-moz-border-radius: 150px;"> '
     flash("you are now logged in as %s" % login_session['username'])
     print("done!")
     return output
@@ -201,12 +205,11 @@ def getUserID(email):
     try:
         user = session.query(User).filter_by(email=email).one()
         return user.id
-    except:
+    except NoResultFound:
         return None
 
+
 # DISCONNECT - Revoke a current user's token and reset their login_session
-
-
 @app.route('/gdisconnect')
 def gdisconnect():
     # Only disconnect a connected user.
@@ -256,7 +259,8 @@ def disconnect():
 def showCatalog():
     categories = session.query(Category).order_by(asc(Category.name))
     items = session.query(CatalogItem).order_by(asc(CatalogItem.name)).limit(5)
-    return render_template('categories.html', categories=categories, items=items)
+    return render_template('categories.html',
+                           categories=categories, items=items)
 
 
 @app.route('/catalog.json')
@@ -270,8 +274,8 @@ def categoryJSON():
         for item in items:
             if item.category.name == category.name:
                 item_list.append(item.serialize)
-        categoryList.append({"items" : item_list})
-    completeJson = {"Category" : categoryList}
+        categoryList.append({"items": item_list})
+    completeJson = {"Category": categoryList}
     return jsonify(completeJson)
 
 
@@ -365,8 +369,8 @@ def newUserAccount():
                 print("username already exists in db")
                 flash('Username already exists, please choose another')
                 return render_template('createnewuser.html')
-            except:
-                pass
+            except NoResultFound:
+                print("username does not exists in db")
         if request.form['email']:
             email = request.form['email']
             try:
@@ -375,8 +379,8 @@ def newUserAccount():
                 flash('This E-Mail address is already associated with \
                 another account, please choose another one')
                 return render_template('createnewuser.html')
-            except:
-                pass
+            except NoResultFound:
+                print("email does not exists in db")
         if request.form['pwd']:
             password = request.form['pwd']
         if username is None or password is None or email is None:
@@ -390,6 +394,7 @@ def newUserAccount():
         return redirect('/login')
     else:
         return render_template('createnewuser.html')
+
 
 if __name__ == '__main__':
     app.secret_key = 'super_secret_key'
