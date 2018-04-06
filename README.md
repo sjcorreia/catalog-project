@@ -37,7 +37,7 @@ If the user would like to test the functionality, she can use the following info
     Username: RoboUser
     Password: Udacity1
 
-This log-in information will give the user the ability to test the CRUD operations on the contents of the application.
+This login information will give the user the ability to test the CRUD operations on the contents of the application.
 
 ## Additional Resources
 
