@@ -7,7 +7,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy import create_engine, asc
-from flask_httpauth import HTTPBasicAuth
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
 import httplib2
@@ -26,11 +25,9 @@ engine = create_engine('sqlite:///catalog.db')
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
-auth = HTTPBasicAuth()
 app = Flask(__name__)
 
 
-@auth.verify_password
 def verify_password(username_or_token, password):
     # Try to see if it's a token first
     user_id = User.verify_auth_token(username_or_token)
@@ -58,21 +55,23 @@ def showLogin():
             flash("Missing Arguments, not properly logged in")
         if session.query(User).filter_by(username=username).first() is \
            not None:
-            print("existing user")
+            # Existing User
             user = session.query(User).filter_by(
                 username=username).first()
             if verify_password(user.username, password):
-                print("Password verified")
+                # Password Verified
                 login_session['username'] = user.username
                 login_session['email'] = user.email
-                # ADD PROVIDER TO LOGIN SESSION
+                # Add provider to login_session
                 login_session['provider'] = 'internal'
                 user_id = getUserID(user.email)
                 if not user_id:
                     print("need to get user_id")
                 login_session['user_id'] = user_id
+                user_token = user.generate_auth_token(600)
+                login_session['user_token'] = user_token
             else:
-                print("password not verified")
+                # Password NOT verified
                 flash("Access Denied! Username or Password Incorrect")
                 return redirect('/login')
         else:
@@ -162,7 +161,7 @@ def gconnect():
     login_session['username'] = data['name']
     login_session['picture'] = data['picture']
     login_session['email'] = data['email']
-    # ADD PROVIDER TO LOGIN SESSION
+    # Add provider to the login_session
     login_session['provider'] = 'google'
 
     # see if user exists, if it doesn't make a new one
@@ -170,6 +169,11 @@ def gconnect():
     if not user_id:
         user_id = createUser(login_session)
     login_session['user_id'] = user_id
+
+    user = getUserInfo(user_id)
+    user_token = user.generate_auth_token(600)
+    login_session['user_token'] = user_token
+    print("User token: %s" % user_token)
 
     output = ''
     output += '<h1>Welcome, '
@@ -243,6 +247,7 @@ def disconnect():
             del login_session['gplus_id']
             del login_session['access_token']
             del login_session['picture']
+        del login_session['user_token']
         del login_session['username']
         del login_session['email']
         del login_session['user_id']
@@ -287,7 +292,6 @@ def showItemsInCategory(category):
         category_id=category_obj.id).all()
     return render_template('catalog.html', category=category_obj, items=items,
                            session=login_session)
-    # return "Items in category: %s" % category
 
 
 # View a Catalog Item
@@ -297,65 +301,77 @@ def viewCatalogItem(category, item):
     categoryToDisplay = session.query(Category).filter_by(name=category).one()
     return render_template('viewcatalogitem.html', category=categoryToDisplay,
                            item=itemToDisplay, session=login_session)
-    # return "View Item %s from category %s" % (item, category)
 
 
 # Add a Catalog Item
 @app.route('/catalog/new', methods=['GET', 'POST'])
-@auth.login_required
 def addNewCatalogItem():
-    categories = session.query(Category).all()
-    if request.method == 'POST':
-        newItem = CatalogItem()
-        if request.form['name']:
-            newItem.name = request.form['name']
-        if request.form['description']:
-            newItem.description = request.form['description']
-        if request.form['category']:
-            newItem.category_id = request.form['category']
-        newItem.user_id = login_session['user_id']
-        session.add(newItem)
-        session.commit()
-        flash('Catalog Item %s Successfully Added' % newItem.name)
-        return redirect(url_for('showCatalog'))
+    if ('user_token' in login_session and
+            verify_password(login_session['user_token'], None)):
+        categories = session.query(Category).all()
+        if request.method == 'POST':
+            newItem = CatalogItem()
+            if request.form['name']:
+                newItem.name = request.form['name']
+            if request.form['description']:
+                newItem.description = request.form['description']
+            if request.form['category']:
+                newItem.category_id = request.form['category']
+            newItem.user_id = login_session['user_id']
+            session.add(newItem)
+            session.commit()
+            flash('Catalog Item %s Successfully Added' % newItem.name)
+            return redirect(url_for('showCatalog'))
+        else:
+            return render_template('newcatalogitem.html',
+                                   categories=categories)
     else:
-        return render_template('newcatalogitem.html', categories=categories)
+        flash("Please Log In")
+        return redirect('/login')
 
 
 # Edit a Catalog Item
 @app.route('/catalog/<string:item>/edit', methods=['GET', 'POST'])
-@auth.login_required
 def editCatalogItem(item):
-    categories = session.query(Category).all()
-    itemToEdit = session.query(CatalogItem).filter_by(
-        name=item).one()
-    if request.method == 'POST':
-        if request.form['name']:
-            itemToEdit.name = request.form['name']
-        if request.form['description']:
-            itemToEdit.description = request.form['description']
-        if request.form['category']:
-            itemToEdit.category_id = request.form['category']
-        session.add(itemToEdit)
-        session.commit()
-        return redirect(url_for('showCatalog'))
+    if ('user_token' in login_session and
+            verify_password(login_session['user_token'], None)):
+        categories = session.query(Category).all()
+        itemToEdit = session.query(CatalogItem).filter_by(
+            name=item).one()
+        if request.method == 'POST':
+            if request.form['name']:
+                itemToEdit.name = request.form['name']
+            if request.form['description']:
+                itemToEdit.description = request.form['description']
+            if request.form['category']:
+                itemToEdit.category_id = request.form['category']
+            session.add(itemToEdit)
+            session.commit()
+            return redirect(url_for('showCatalog'))
+        else:
+            return render_template('editcatalogitem.html', item=itemToEdit,
+                                   categories=categories)
     else:
-        return render_template('editcatalogitem.html', item=itemToEdit,
-                               categories=categories)
+        flash("Please Log In")
+        return redirect('/login')
 
 
 # Delete a Catalog Item
 @app.route('/catalog/<string:item>/delete', methods=['GET', 'POST'])
-@auth.login_required
 def deleteItem(item):
-    itemToDelete = session.query(CatalogItem).filter_by(name=item).one()
-    if request.method == 'POST':
-        session.delete(itemToDelete)
-        session.commit()
-        flash('Catalog Item Successfully Deleted')
-        return redirect(url_for('showCatalog'))
+    if ('user_token' in login_session and
+            verify_password(login_session['user_token'], None)):
+        itemToDelete = session.query(CatalogItem).filter_by(name=item).one()
+        if request.method == 'POST':
+            session.delete(itemToDelete)
+            session.commit()
+            flash('Catalog Item Successfully Deleted')
+            return redirect(url_for('showCatalog'))
+        else:
+            return render_template('deletecatalogitem.html', item=itemToDelete)
     else:
-        return render_template('deletecatalogitem.html', item=itemToDelete)
+        flash("Please Log In")
+        return redirect('/login')
 
 
 # Create a new user account
