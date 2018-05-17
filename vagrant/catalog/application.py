@@ -1,5 +1,5 @@
 from __future__ import print_function
-from models import Base, User, Category, CatalogItem
+from catalog.models import Base, User, Category, CatalogItem
 from flask import Flask, jsonify, request, redirect
 from flask import url_for, abort, g, render_template, flash
 from flask import session as login_session
@@ -17,10 +17,13 @@ import json
 import random
 import string
 
-CLIENT_ID = json.loads(
-    open('client_secrets.json', 'r').read())['web']['client_id']
+# CLIENT_ID = json.loads(
+#     open('client_secrets.json', 'r').read())['web']['client_id']
 
-engine = create_engine('sqlite:///catalog.db')
+CLIENT_ID = "641303818172-2pr2brlfhib56rroe19ekendj8hd9p7s.apps.googleusercontent.com"
+
+# engine = create_engine('sqlite:///catalog.db')
+engine = create_engine('postgresql://catalog:udacity@localhost/catalog_db')
 
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)

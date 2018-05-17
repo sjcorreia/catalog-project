@@ -18,10 +18,10 @@ Base = declarative_base()
 class User(Base):
     __tablename__ = 'user'
     id = Column(Integer, primary_key=True)
-    username = Column(String(32), index=True)
+    username = Column(String(64), index=True)
     picture = Column(String)
     email = Column(String)
-    password_hash = Column(String(64))
+    password_hash = Column(String(256))
 
     def hash_password(self, password):
         self.password_hash = pwd_context.encrypt(password)
@@ -70,7 +70,7 @@ class CatalogItem(Base):
 
     name = Column(String(80), nullable=False)
     id = Column(Integer, primary_key=True)
-    description = Column(String(1000))
+    description = Column(String(2048))
     category_id = Column(Integer, ForeignKey('category.id'))
     category = relationship(Category)
     user_id = Column(Integer, ForeignKey('user.id'))
@@ -87,7 +87,8 @@ class CatalogItem(Base):
         }
 
 
-engine = create_engine('sqlite:///catalog.db')
+# engine = create_engine('sqlite:///catalog.db')
+engine = create_engine('postgresql://catalog:udacity@localhost/catalog_db')
 
 
 Base.metadata.create_all(engine)
